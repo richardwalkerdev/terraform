@@ -10,6 +10,22 @@ resource "aws_s3_bucket" "prod_tf_example" {
   
 resource "aws_default_vpc" "default" {}
 
+resource "aws_default_subnet" "default_azb" {
+  availability_zone = "eu-west-2b"
+
+  tags = {
+    "Terraform" : "true"
+  }
+}
+
+resource "aws_default_subnet" "default_azc" {
+  availability_zone = "eu-west-2c"
+
+  tags = {
+    "Terraform" : "true"
+  }
+}
+
 resource "aws_security_group" "prod_web" {
   name        = "prod_web"
   description = "Allow http and https ports inbound and outbound"
@@ -62,4 +78,23 @@ resource "aws_eip" "prod_web" {
   tags = {
     "Terraform" : "true"
   }
+}
+
+resource "aws_elb" "prod_web" {
+  name            = "prod-web" 
+  instances       = aws_instance.prod_web.*.id
+  subnets         = [aws_default_subnet.default_azb.id, aws_default_subnet.default_azc.id]
+  security_groups = [aws_security_group.prod_web.id]
+
+  listener {
+    instance_port     = 80
+    instance_protocol = "http"
+    lb_port           = 80
+    lb_protocol       = "http"
+  }
+  
+  tags = {
+    "Terraform" : "true"
+  }
+
 }
